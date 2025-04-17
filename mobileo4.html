@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Particle Text Animation</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      z-index: 0;
+    }
+    #fpsCounter {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 1.25rem;
+      z-index: 10;
+    }
+    #controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.8), rgba(30, 30, 30, 0.9));
+  color: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  max-width: 320px;
+  max-height: calc(100vh - 20px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  backdrop-filter: blur(6px);
+  scrollbar-width: thin;
+  scrollbar-color: #666 #222;
+}
+    #controls label {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+#controls input[type="text"],
+#controls input[type="range"],
+#controls input[type="color"],
+#controls select {
+  padding: 6px;
+  margin-bottom: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+#controls button {
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(to right, #ff6a00, #ee0979);
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s, box-shadow 0.3s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+#controls button:hover {
+  background: linear-gradient(to right, #f83600, #f9d423);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+    #controls button {
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(to right, #444, #222);
+      color: #fff;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+    #controls button:hover {
+      background: linear-gradient(to right, #666, #333);
+    }
+  #controls input[type="file"] {
+  padding: 6px;
+  margin-top: 6px;
+  background-color: #222;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#controls::-webkit-scrollbar {
+  width: 8px;
+}
+#controls::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 4px;
+}
+#controls::-webkit-scrollbar-track {
+  background: #222;
+  border-radius: 4px;
+}
+
+#controls fieldset {
+  animation: fadeIn 0.4s ease;
+  flex-shrink: 0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#controls input[type="range"]::-webkit-slider-thumb {
+  background: #f80;
+  border: none;
+  border-radius: 50%;
+}
+
+#controls input[type="range"] {
+  accent-color: #f80;
+}
+
+#controls select {
+  background-color: #111;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 6px;
+}
+
+#controls details[open] > summary .arrow {
+  transform: rotate(90deg);
+}
+#controls details[open] summary + * {
+  opacity: 1;
+  transform: translateY(0);
+  transition: all 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive pour mobile */
+    @media (max-width: 768px) {
+      #controls {
+        top: auto;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100vw;
+        max-width: none;
+        max-height: 40vh;
+        padding: 10px;
+        border-radius: 12px 12px 0 0;
+      }
+      #controls details {
+        margin-bottom: 10px;
+      }
+      #controls label {
+        font-size: 0.9rem;
+      }
+      #controls button {
+        padding: 8px;
+        font-size: 0.9rem;
+      }
+      #fpsCounter {
+        display: none;
+      }
+
+</style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div id="fpsCounter"></div>
+  <div id="controls">
+  <details open style="margin-bottom: 20px; padding: 10px; border: 1px solid #444; border-radius: 8px; background: rgba(255,255,255,0.03); box-shadow: 0 0 4px rgba(255,255,255,0.05);">
+    <summary style="font-weight: bold; cursor: pointer; list-style: none; position: relative; padding-left: 1.2em;">
+      <span style="position: absolute; left: 0; top: 0; transform: rotate(90deg); transition: transform 0.3s ease;">▶</span>Image</summary>
+    <label>Importer une image : <input id="fileInput" type="file" accept="image/*" /></label>
+  </details>
+
+  <details open style="margin-bottom: 20px; padding: 10px; border: 1px solid #444; border-radius: 8px; background: rgba(255,255,255,0.03);">
+    <summary style="font-weight: bold; cursor: pointer; list-style: none; position: relative; padding-left: 1.2em;">
+      <span class="arrow" style="position: absolute; left: 0; top: 0; transition: transform 0.3s ease;">▶</span>Texte</summary>
+    <label>Texte : <input id="textInput" type="text" value="card maker" /></label>
+    <label>Couleur du texte : <input id="textColor" type="color" value="#ffffff" /></label>
+    <label>Police :
+      <select id="fontSelect">
+        <option>Verdana</option>
+        <option>Arial</option>
+        <option>Georgia</option>
+        <option>Courier New</option>
+      </select>
+    </label>
+    <label>Taille du texte : <input id="sizeRange" type="range" min="50" max="200" value="100" /></label>
+  </details>
+
+  <details open style="margin-bottom: 16px; border: 1px solid #666; border-radius: 8px; padding: 10px; background: rgba(255,255,255,0.05); box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.3s ease;">
+    <summary style="font-weight: bold; cursor: pointer;">Particules</summary>
+    <label>Nombre de particules : <input id="countRange" type="range" min="100" max="16000" step="100" value="1000" /></label>
+    <label>Forme des particules :
+      <select id="shapeSelect">
+        <option value="circle">Rond</option>
+        <option value="square">Carré</option>
+        <option value="triangle">Triangle</option>
+      </select>
+    </label>
+    <label>Taille des particules : <input id="particleSizeRange" type="range" min="1" max="10" step="0.5" value="2" /></label>
+    <label>Rayon souris : <input id="mouseRadius" type="range" min="50" max="300" value="150" /></label>
+    <label><input id="multiColor" type="checkbox" checked /> Couleurs multiples</label>
+  </details>
+
+  <details open style="margin-bottom: 16px; border: 1px solid #666; border-radius: 8px; padding: 10px; background: rgba(255,255,255,0.05); box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.3s ease;">
+    <summary style="font-weight: bold; cursor: pointer;">Fond</summary>
+    <label>Type de dégradé :
+      <select id="gradType">
+        <option value="linear">Linéaire</option>
+        <option value="radial">Radial</option>
+      </select>
+    </label>
+    <label>Couleur 1 : <input id="gradColor1" type="color" value="#ff0000" /></label>
+    <label>Couleur 2 : <input id="gradColor2" type="color" value="#0000ff" /></label>
+    <label>Vitesse du fond : <input id="gradSpeed" type="range" min="0.1" max="5" step="0.1" value="1" /></label>
+    <label>Traînée (alpha) : <input id="trailAlpha" type="range" min="0" max="1" step="0.01" value="0.5" /></label>
+  </details>
+
+  <details open style="margin-bottom: 16px; border: 1px solid #666; border-radius: 8px; padding: 10px; background: rgba(255,255,255,0.05); box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background 0.3s ease;">
+    <summary style="font-weight: bold; cursor: pointer;">Mode ASCII</summary>
+    <label><input id="asciiToggle" type="checkbox" /> Activer le mode ASCII</label>
+    <label>Caractères ASCII : <input id="asciiChars" type="text" value="*@#&$" /></label>
+  </details>
+
+  <div style="margin-top: auto; padding-top: 10px; border-top: 1px solid #666;">
+  <fieldset style="margin: 0; border: 1px solid #888; padding: 12px; border-radius: 8px; background-color: rgba(0,0,0,0.2); box-shadow: 0 0 4px rgba(255,255,255,0.1);">
+    <legend style="padding: 0 6px; font-weight: bold;">Actions</legend>
+    <button id="pauseBtn">Pause</button>
+    <button id="resetBtn">Réinitialiser</button>
+    <button id="exportBtn">Exporter en PNG</button>
+  </fieldset>
+</div>
+</div>
+</div>
+  <script>
+    const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const fpsCounter = document.getElementById("fpsCounter");
+
+let W = canvas.width = window.innerWidth;
+let H = canvas.height = window.innerHeight;
+let gradTime = 0;
+let paused = false;
+let lastFrame = performance.now();
+
+const particles = [];
+let mouse = { x: null, y: null, radius: 100 };
+let imageObj = null;
+let textCoords = [];
+
+function randomASCIIChar() {
+  const chars = asciiChars.value || '*@#';
+  return chars[Math.floor(Math.random() * chars.length)];
+}
+
+class Particle {
+  constructor(x, y, color) {
+    this.x = Math.random() * W;
+    this.y = Math.random() * H;
+    this.baseX = x;
+    this.baseY = y;
+    this.color = color;
+    this.size = parseFloat(particleSizeRange.value);
+    this.density = Math.random() * 30 + 1;
+    this.char = randomASCIIChar();
+  }
+
+  draw() {
+    ctx.fillStyle = this.color;
+    if (asciiToggle.checked) {
+      ctx.font = `${this.size * 5}px monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(this.char, this.x, this.y);
+    } else {
+      ctx.beginPath();
+      const shape = shapeSelect.value;
+      if (shape === "square") {
+        ctx.fillRect(this.x - this.size, this.y - this.size, this.size * 2, this.size * 2);
+      } else if (shape === "triangle") {
+        ctx.moveTo(this.x, this.y - this.size);
+        ctx.lineTo(this.x + this.size, this.y + this.size);
+        ctx.lineTo(this.x - this.size, this.y + this.size);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  update() {
+    const dx = mouse.x - this.x;
+    const dy = mouse.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    const maxDist = parseFloat(mouseRadius.value);
+    if (distance < maxDist) {
+      const force = (maxDist - distance) / maxDist;
+      const dirX = dx / distance;
+      const dirY = dy / distance;
+      this.x -= dirX * force * this.density;
+      this.y -= dirY * force * this.density;
+    } else {
+      this.x += (this.baseX - this.x) / 10;
+      this.y += (this.baseY - this.y) / 10;
+    }
+  }
+}
+
+function createTextMap() {
+  const offCanvas = document.createElement("canvas");
+  const scaleFactor = 1.0;
+  const sampleStep = Math.max(2, Math.floor(6000 / parseInt(countRange.value)));
+  offCanvas.width = W;
+  offCanvas.height = H;
+  const offCtx = offCanvas.getContext("2d");
+  textCoords = [];
+
+  if (imageObj) {
+    const iw = imageObj.width;
+    const ih = imageObj.height;
+    const scale = Math.min(W / iw, H / ih) * scaleFactor;
+    const w = iw * scale;
+    const h = ih * scale;
+    const x = (W - w) / 2;
+    const y = (H - h) / 2;
+    offCtx.drawImage(imageObj, x, y, w, h);
+  } else {
+    offCtx.fillStyle = textColor.value;
+    offCtx.font = `${sizeRange.value}px ${fontSelect.value}`;
+    offCtx.textAlign = "center";
+    offCtx.fillText(textInput.value, W / 2, H / 2);
+  }
+
+  const data = offCtx.getImageData(0, 0, W, H).data;
+  for (let y = 0; y < H; y += sampleStep) {
+    for (let x = 0; x < W; x += sampleStep) {
+      const i = (y * W + x) * 4;
+      const alpha = data[i + 3];
+      if (alpha > 128) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        textCoords.push({ x, y, color: `rgb(${r},${g},${b})` });
+      }
+    }
+  }
+  for (let y = 0; y < H; y += 6) {
+    for (let x = 0; x < W; x += 6) {
+      const i = (y * W + x) * 4;
+      if (data[i + 3] > 128) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        textCoords.push({ x, y, color: `rgb(${r},${g},${b})` });
+      }
+    }
+  }
+}
+
+function initParticles() {
+  particles.length = 0;
+  createTextMap();
+  const count = parseInt(countRange.value);
+  for (let i = 0; i < count; i++) {
+    const spot = textCoords[Math.floor(Math.random() * textCoords.length)];
+    if (spot) particles.push(new Particle(spot.x, spot.y, multiColor.checked ? spot.color : textColor.value));
+  }
+}
+
+function drawBackground() {
+  gradTime += parseFloat(gradSpeed.value) * 0.01;
+  let grad;
+  if (gradType.value === "radial") {
+    grad = ctx.createRadialGradient(W / 2, H / 2, 50, W / 2, H / 2, Math.hypot(W, H) / 2);
+  } else {
+    const x1 = Math.cos(gradTime) * W;
+    const y1 = Math.sin(gradTime) * H;
+    grad = ctx.createLinearGradient(x1, y1, W - x1, H - y1);
+  }
+  grad.addColorStop(0, gradColor1.value);
+  grad.addColorStop(1, gradColor2.value);
+  ctx.globalAlpha = parseFloat(trailAlpha.value);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+}
+
+function animate(ts) {
+  const delta = ts - lastFrame;
+  lastFrame = ts;
+  fpsCounter.textContent = `FPS: ${Math.round(1000 / delta)}`;
+  if (!paused) {
+    drawBackground();
+    particles.forEach(p => { p.update(); p.draw(); });
+  }
+  requestAnimationFrame(animate);
+}
+
+pauseBtn.onclick = () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? "Reprendre" : "Pause";
+};
+
+fileInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    imageObj = new Image();
+    imageObj.onload = initParticles;
+    imageObj.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+resetBtn.onclick = () => {
+  textInput.value = "card maker";
+  asciiToggle.checked = false;
+  asciiChars.value = "*@#&$";
+  imageObj = null;
+  initParticles();
+};
+
+exportBtn.onclick = () => {
+  const link = document.createElement("a");
+  link.download = "particles.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+};
+
+[
+  textInput, textColor, fontSelect, sizeRange, countRange,
+  shapeSelect, multiColor, mouseRadius, particleSizeRange,
+  asciiToggle, asciiChars, gradColor1, gradColor2, gradSpeed,
+  gradType, trailAlpha
+].forEach(el => el.addEventListener("input", initParticles));
+
+canvas.addEventListener("mousemove", e => {
+  mouse.x = e.offsetX;
+  mouse.y = e.offsetY;
+});
+
+window.addEventListener("resize", () => {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  initParticles();
+});
+
+initParticles();
+animate();
+
+  </script>
+</body>
+</html>
