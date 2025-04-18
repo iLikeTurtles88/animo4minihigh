@@ -147,7 +147,7 @@
         window.addEventListener('resize', resize);
         canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
         canvas.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
-        toggleControlsBtn.addEventListener('click', () => controlsPanel.classList.toggle('controlsvisible'));
+        toggleControlsBtn.addEventListener('click', () => controlsPanel.classList.toggle('controls-visible'));
         fileInput.onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => {
                 imageObj = new Image();
                 imageObj.onload = initParticles;
