@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animation Particules Convergentes</title>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; background-color: #111; }
+        #canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: block; z-index: 0; }
+        #fpsCounter { position: fixed; top: 10px; right: 10px; color: #0f0; font-family: monospace; font-size: 1.1rem; z-index: 20; background-color: rgba(0,0,0,0.6); padding: 3px 6px; border-radius: 3px; pointer-events: none; }
+        #toggleControlsBtn { display: none; position: fixed; bottom: 15px; left: 15px; z-index: 15; padding: 10px 15px; background: linear-gradient(145deg, #ff6a00, #ee0979); color: white; border: none; border-radius: 50px; font-size: 1.2rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4); transition: transform 0.2s ease, background 0.3s ease; }
+        #toggleControlsBtn:hover { transform: scale(1.1); }
+        #toggleControlsBtn:active { transform: scale(0.95); }
+        #controls { position: absolute; top: 10px; left: 10px; background: linear-gradient(145deg, rgba(10, 10, 10, 0.88), rgba(40, 40, 40, 0.92)); color: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.55); z-index: 10; max-width: 330px; max-height: calc(100vh - 30px); display: flex; flex-direction: column; overflow-y: auto; backdrop-filter: blur(8px); scrollbar-width: thin; scrollbar-color: #777 #333; box-sizing: border-box; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease-in-out; opacity: 1; }
+        #controls label, #controls legend { font-weight: bold; font-size: 0.9rem; margin-bottom: 4px; margin-top: 10px; color: #ddd; display: block; }
+        #controls input[type="text"], #controls input[type="range"], #controls input[type="color"], #controls input[type="file"], #controls select { padding: 9px; margin-bottom: 12px; width: 100%; border: none; border-radius: 5px; box-sizing: border-box; background-color: #404040; color: #eee; border: 1px solid #666; font-size: 0.95rem; }
+        #controls input[type="color"] { padding: 4px; height: 40px; cursor: pointer; }
+        #controls input[type="file"] { padding: 8px; margin-top: 6px; background-color: #333; color: #ccc; border: 1px solid #555; cursor: pointer; font-size: 13px; }
+        #controls button { padding: 11px 15px; border: none; border-radius: 6px; background: linear-gradient(to right, #FF0000, #e61c81); color: #fff; font-weight: bold; margin-bottom: 8px; cursor: pointer; transition: transform 0.2s, background 0.3s, box-shadow 0.3s; box-shadow: 0 3px 7px rgba(0,0,0,0.35); width: 100%; box-sizing: border-box; margin-top: 8px; font-size: 0.95rem; }
+        #controls button:hover { background: linear-gradient(to right, #f85d00, #f53d99); transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,0.4); }
+        #pauseBtn { background: linear-gradient(to right, #555, #333); }
+        #pauseBtn:hover { background: linear-gradient(to right, #777, #444); }
+        #controls::-webkit-scrollbar { width: 8px; }
+        #controls::-webkit-scrollbar-thumb { background: #777; border-radius: 4px; }
+        #controls::-webkit-scrollbar-track { background: #333; border-radius: 4px; }
+        #controls details { margin-bottom: 15px; padding: 12px; border: 1px solid #555; border-radius: 8px; background: rgba(255,255,255,0.04); box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: background 0.3s ease; }
+        #controls details[open] { background: rgba(255,255,255,0.08); }
+        #controls summary { font-weight: bold; cursor: pointer; list-style: none; position: relative; padding-left: 1.6em; margin-bottom: 10px; color: #eee; font-size: 1rem; user-select: none; }
+        #controls summary::before { content: '▶'; position: absolute; left: 0; top: 1px; display: inline-block; transition: transform 0.2s ease-in-out; font-size: 0.8em; color: #bbb; }
+        #controls details[open] > summary::before { transform: rotate(90deg); }
+        .value-display { font-weight: normal; font-size: 0.85rem; color: #bbb; margin-left: 8px; }
+        label.checkbox-label { display: flex; align-items: center; margin-top: 12px; cursor: pointer; }
+        label.checkbox-label input[type="checkbox"] { width: auto; margin-right: 10px; margin-bottom: 0; flex-shrink: 0; accent-color: #ff7e21; }
+        #controls fieldset { margin: 0; border: 1px solid #666; padding: 12px; border-radius: 8px; background-color: rgba(0,0,0,0.15); box-shadow: inset 0 1px 4px rgba(0,0,0,0.25); }
+        #controls legend { padding: 0 8px; font-size: 0.9rem; color: #ccc; }
+        @media (max-width: 768px) {
+            #toggleControlsBtn { display: block; }
+            #controls { position: fixed; top: auto; bottom: 0; left: 0; width: 100%; max-width: none; max-height: 60vh; border-radius: 18px 18px 0 0; padding: 10px 15px 20px; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); transform: translateY(calc(100% + 20px)); opacity: 0.85; pointer-events: none; }
+            #controls.controls-visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
+            #controls input, #controls select { padding: 11px; font-size: 1rem; }
+            #controls input[type="color"] { padding: 5px; height: 45px; }
+            #controls button { padding: 14px 18px; font-size: 1.05rem; }
+            #fpsCounter { font-size: 1rem; }
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #controls input[type="range"]::-webkit-slider-thumb { background: #f80; border: none; border-radius: 50%; cursor: pointer; height: 18px; width: 18px; margin-top: -6px; appearance: none; -webkit-appearance: none; }
+        #controls input[type="range"] { accent-color: #f80; cursor: pointer; height: 6px; }
+        #controls select { background-color: #444; color: #fff; border: 1px solid #666; border-radius: 5px; padding: 9px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="fpsCounter">FPS: ...</div>
+    <button id="toggleControlsBtn">⚙️</button>
+    <div id="controls">
+        <details open><summary>Image</summary>
+            <label>Importer :</label>
+            <input id="fileInput" type="file" accept="image/*" />
+        </details>
+        <details open><summary>Texte</summary>
+            <label>Texte :</label>
+            <input id="textInput" type="text" value="Convergence" />
+            <label>Couleur Texte :</label>
+            <input id="textColor" type="color" value="#ffffff" />
+            <label>Police :</label>
+            <select id="fontSelect">
+                <option>Verdana</option><option>Arial</option><option>Georgia</option><option>Courier New</option><option>Impact</option><option>Times New Roman</option>
+            </select>
+            <label>Taille Texte :<span class="value-display" id="sizeValue">120</span>px</label>
+            <input id="sizeRange" type="range" min="30" max="250" value="120" />
+        </details>
+        <details open><summary>Particules</summary>
+            <label>Nombre :<span class="value-display" id="countValue">5000</span></label>
+            <input id="countRange" type="range" min="100" max="16000" step="100" value="5000" />
+            <label>Forme :</label>
+            <select id="shapeSelect"><option value="circle" selected>Rond</option><option value="square">Carré</option><option value="triangle">Triangle</option></select>
+            <label>Taille :<span class="value-display" id="particleSizeValue">1.2</span></label>
+            <input id="particleSizeRange" type="range" min="0.5" max="12" step="0.1" value="1.2" />
+            <label>Rayon Souris :<span class="value-display" id="mouseRadiusValue">150</span></label>
+            <input id="mouseRadius" type="range" min="20" max="400" value="150" />
+            <label class="checkbox-label"><input id="multiColor" type="checkbox" checked /> Couleurs multiples (image)</label>
+            <label>Placement :</label>
+            <select id="placementModeSelect">
+                <option value="grid">Grille</option>
+                <option value="free" selected>Libre</option>
+            </select>
+        </details>
+        <details open><summary>Fond</summary>
+            <label>Type dégradé :</label>
+            <select id="gradType"><option value="linear" selected>Linéaire</option><option value="radial">Radial</option></select>
+            <label>Couleur 1 :</label><input id="gradColor1" type="color" value="#0a0a23" />
+            <label>Couleur 2 :</label><input id="gradColor2" type="color" value="#000000" />
+            <label>Vitesse :<span class="value-display" id="gradSpeedValue">0.4</span></label>
+            <input id="gradSpeed" type="range" min="0" max="5" step="0.1" value="0.4" />
+            <label>Traînée (alpha) :<span class="value-display" id="trailAlphaValue">0.30</span></label>
+            <input id="trailAlpha" type="range" min="0" max="1" step="0.01" value="0.30" />
+        </details>
+        <details><summary>Mode ASCII</summary>
+            <label class="checkbox-label"><input id="asciiToggle" type="checkbox" /> Activer</label>
+            <label>Caractères :</label><input id="asciiChars" type="text" value=".:*+=#%@" placeholder="Ex: .:-=+*#%@" />
+        </details>
+        <fieldset style="margin-top: auto; border-top:1px solid #666; padding-top:15px;">
+            <legend>Actions</legend>
+            <button id="pauseBtn">Pause</button>
+            <button id="resetBtn">Réinitialiser</button>
+            <button id="exportBtn">Exporter PNG</button>
+        </fieldset>
+    </div>
+    <script>
+        const canvas = document.getElementById("canvas"); const ctx = canvas.getContext("2d"); const fpsCounter = document.getElementById("fpsCounter"); const controlsPanel = document.getElementById('controls'); const toggleControlsBtn = document.getElementById('toggleControlsBtn');
+        const fileInput = document.getElementById("fileInput"); const textInput = document.getElementById("textInput"); const textColor = document.getElementById("textColor"); const fontSelect = document.getElementById("fontSelect"); const sizeRange = document.getElementById("sizeRange"); const countRange = document.getElementById("countRange"); const shapeSelect = document.getElementById("shapeSelect"); const particleSizeRange = document.getElementById("particleSizeRange"); const mouseRadius = document.getElementById("mouseRadius"); const multiColor = document.getElementById("multiColor"); const placementModeSelect = document.getElementById("placementModeSelect"); const gradType = document.getElementById("gradType"); const gradColor1 = document.getElementById("gradColor1"); const gradColor2 = document.getElementById("gradColor2"); const gradSpeed = document.getElementById("gradSpeed"); const trailAlpha = document.getElementById("trailAlpha"); const asciiToggle = document.getElementById("asciiToggle"); const asciiChars = document.getElementById("asciiChars"); const pauseBtn = document.getElementById("pauseBtn"); const resetBtn = document.getElementById("resetBtn"); const exportBtn = document.getElementById("exportBtn");
+        const sizeValue = document.getElementById("sizeValue"); const countValue = document.getElementById("countValue"); const particleSizeValue = document.getElementById("particleSizeValue"); const mouseRadiusValue = document.getElementById("mouseRadiusValue"); const gradSpeedValue = document.getElementById("gradSpeedValue"); const trailAlphaValue = document.getElementById("trailAlphaValue");
+        let W, H, particles = [], textCoords = [], imageObj = null, paused = false, lastTime = performance.now(), gradTime = 0;
+        let mouse = {x: null, y: null};
+        
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+            initParticles();
+        }
+        window.addEventListener('resize', resize);
+        canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        canvas.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
+        toggleControlsBtn.addEventListener('click', () => controlsPanel.classList.toggle('controls-visible'));
+        fileInput.onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { imageObj = new Image(); imageObj.onload = initParticles; imageObj.src = ev.target.result; }; r.readAsDataURL(f); };
+        function updateDisplays() {
+            sizeValue.textContent = sizeRange.value;
+            countValue.textContent = countRange.value;
+            particleSizeValue.textContent = parseFloat(particleSizeRange.value).toFixed(1);
+            mouseRadiusValue.textContent = mouseRadius.value;
+            gradSpeedValue.textContent = parseFloat(gradSpeed.value).toFixed(1);
+            trailAlphaValue.textContent = parseFloat(trailAlpha.value).toFixed(2);
+        }
+        
+        class Particle {
+            constructor(tx, ty, c) {
+                this.baseX = tx;
+                this.baseY = ty;
+                this.x = Math.random() * W;
+                this.y = Math.random() * H;
+                this.color = c;
+                this.size = parseFloat(particleSizeRange.value);
+                this.density = Math.random() * 20 + 5;
+
+                // Assignation du caractère ASCII aléatoire
+                const chars = asciiChars.value.trim() || '.';
+                this.char = chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                if (asciiToggle.checked) {
+                    ctx.font = `${this.size * 5}px monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.char, this.x, this.y);
+                } else {
+                    ctx.beginPath();
+                    const s = this.size / 2;
+                    if (shapeSelect.value === 'square') {
+                        ctx.fillRect(this.x - s, this.y - s, this.size, this.size);
+                    } else if (shapeSelect.value === 'triangle') {
+                        ctx.moveTo(this.x, this.y - this.size);
+                        ctx.lineTo(this.x + this.size, this.y + this.size);
+                        ctx.lineTo(this.x - this.size, this.y + this.size);
+                        ctx.closePath();
+                        ctx.fill();
+                    } else {
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            update() {
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                const r = parseFloat(mouseRadius.value);
+                if (dist < r && mouse.x != null) {
+                    const f = (r - dist) / r;
+                    const a = Math.atan2(dy, dx);
+                    this.x -= Math.cos(a) * f * this.density;
+                    this.y -= Math.sin(a) * f * this.density;
+                } else {
+                    this.x += (this.baseX - this.x) * 0.07;
+                    this.y += (this.baseY - this.y) * 0.07;
+                }
+            }
+        }
+
+        function createTextMap() {
+            const off = document.createElement('canvas');
+            off.width = W; off.height = H;
+            const oc = off.getContext('2d');
+            oc.clearRect(0, 0, W, H);
+            oc.fillStyle = textColor.value;
+            oc.font = `${sizeRange.value}px ${fontSelect. value}`;
+            oc.textAlign = 'center';
+            oc.textBaseline = 'middle';
+
+            if (imageObj) {
+                const ar = imageObj.naturalWidth / imageObj.naturalHeight;
+                let dw = W * 0.85;
+                let dh = dw / ar;
+                if (dh > H * 0.85) { dh = H * 0.85; dw = dh * ar; }
+                oc.drawImage(imageObj, (W - dw) / 2, (H - dh) / 2, dw, dh);
+            } else {
+                oc.fillText(textInput.value, W / 2, H / 2);
+            }
+
+            const data = oc.getImageData(0, 0, W, H).data;
+            textCoords = [];
+            const cnt = parseInt(countRange.value);
+            
+            if (placementModeSelect.value === 'free') {
+                const step = Math.max(2, Math.floor(6000 / cnt));
+                for (let y = 0; y < H; y += step) {
+                    for (let x = 0; x < W; x += step) {
+                        const i = (y * W + x) * 4;
+                        if (data[i + 3] > 100) {
+                            textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
+                        }
+                    }
+                }
+                for (let y = 0; y < H; y += 6) {
+                    for (let x = 0; x < W; x += 6) {
+                        const i = (y * W + x) * 4;
+                        if (data[i + 3] > 100) {
+                            textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
+                        }
+                    }
+                }
+            } else {
+                const step = Math.max(2, Math.floor(3 * Math.pow(cnt / 800, 0.7)));
+                for (let y = 0; y < H; y += step) {
+                    for (let x = 0; x < W; x += step) {
+                        const i = (y * W + x) * 4;
+                        if (data[i + 3] > 100) {
+                            textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
+                        }
+                    }
+                }
+            }
+
+            if (!textCoords.length) textCoords.push({ x: W/2, y: H/2, color: textColor.value });
+        }
+
+        function initParticles() {
+            updateDisplays();
+            createTextMap();
+            particles = [];
+            const cnt = parseInt(countRange.value);
+            for (let i = 0; i < cnt; i++) {
+                const s = textCoords[Math.floor(Math.random() * textCoords.length)];
+                particles.push(new Particle(s.x, s.y, multiColor.checked ? s.color : textColor.value));
+            }
+        }
+
+        function drawBackground() {
+            gradTime += parseFloat(gradSpeed.value) * 0.01;
+            let grad;
+            if (gradType.value === 'radial') {
+                grad = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, Math.hypot(W, H)/2);
+            } else {
+                const a = gradTime;
+                const x1 = W/2 + Math.cos(a) * W/1.5;
+                const y1 = H/2 + Math.sin(a) * H/1.5;
+                grad = ctx.createLinearGradient(x1, y1, W - x1, H - y1);
+            }
+            grad.addColorStop(0, gradColor1.value);
+            grad.addColorStop(1, gradColor2.value);
+            ctx.globalAlpha = 1 - parseFloat(trailAlpha.value);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, W, H);
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+        }
+
+        function animate(t) {
+            const dt = t - lastTime;
+            lastTime = t;
+            fpsCounter.textContent = `FPS: ${Math.round(1000 / dt)}`;
+            if (!paused) {
+                drawBackground();
+                particles.forEach(p => { p.update(); p.draw(); });
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Initialisation
+        placementModeSelect.value = 'free';
+        [textInput, textColor, fontSelect, sizeRange, countRange, shapeSelect, particleSizeRange,
+         mouseRadius, multiColor, placementModeSelect, gradType, gradColor1, gradColor2,
+         gradSpeed, trailAlpha, asciiToggle, asciiChars].forEach(el => el.addEventListener('input', initParticles));
+        pauseBtn.onclick = () => { paused = !paused; pauseBtn.textContent = paused ? 'Reprendre' : 'Pause'; };
+        resetBtn.onclick = () => location.reload();
+        exportBtn.onclick = () => { const a = document.createElement('a'); a.download = 'particles.png'; a.href = canvas.toDataURL(); a.click(); };
+        resize();
+        initParticles();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
