@@ -87,13 +87,13 @@
             <input id="gradColor1" type="color" value="#ff0000" />
             <label>Couleur 2 :</label>
             <input id="gradColor2" type="color" value="#000000" />
-            <label>Vitesse :<span class="valuedisplay" id="gradSpeedValue">0.4</span></label>
+            <label>Vitesse :<span class="value-display" id="gradSpeedValue">0.4</span></label>
             <input id="gradSpeed" type="range" min="0" max="5" step="0.1" value="0.4" />
-            <label>Traînée (alpha) :<span class="valuedisplay" id="trailAlphaValue">0.30</span></label>
+            <label>Traînée (alpha) :<span class="value-display" id="trailAlphaValue">0.30</span></label>
             <input id="trailAlpha" type="range" min="0" max="1" step="0.01" value="0.30" />
         </details>
         <details><summary>Mode ASCII</summary>
-            <label class="checkboxlabel"><input id="asciiToggle" type="checkbox" /> Activer</label>
+            <label class="checkbox-label"><input id="asciiToggle" type="checkbox" /> Activer</label>
             <label>Caractères :</label>
             <input id="asciiChars" type="text" value=".:*+=#%@" placeholder="Ex: .:-=+*#%@" />
         </details>
@@ -108,8 +108,16 @@
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const fpsCounter = document.getElementById("fpsCounter");
-        const controlsPanel = document.getElementById('controls');
-        const toggleControlsBtn = document.getElementById('toggleControlsBtn');
+        const controlsPanel = document.getElementById("controls");
+        const toggleControlsBtn = document.getElementById("toggleControlsBtn");
+        const VISIBLE_CLASS = "controls-visible";
+
+        // Toggle du panneau de contrôles
+        toggleControlsBtn.addEventListener("click", () => {
+            controlsPanel.classList.toggle(VISIBLE_CLASS);
+        });
+
+        // Variables et éléments du reste du script
         const fileInput = document.getElementById("fileInput");
         const textInput = document.getElementById("textInput");
         const textColor = document.getElementById("textColor");
@@ -137,24 +145,31 @@
         const mouseRadiusValue = document.getElementById("mouseRadiusValue");
         const gradSpeedValue = document.getElementById("gradSpeedValue");
         const trailAlphaValue = document.getElementById("trailAlphaValue");
+
         let W, H, particles = [], textCoords = [], imageObj = null, paused = false, lastTime = performance.now(), gradTime = 0;
         let mouse = {x: null, y: null};
+
         function resize() {
             W = canvas.width = window.innerWidth;
             H = canvas.height = window.innerHeight;
             initParticles();
         }
-        window.addEventListener('resize', resize);
-        canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-        canvas.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
-        toggleControlsBtn.addEventListener('click', () => controlsPanel.classList.toggle('controls-visible'));
-        fileInput.onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => {
+        window.addEventListener("resize", resize);
+        canvas.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        canvas.addEventListener("mouseout", () => { mouse.x = null; mouse.y = null; });
+
+        fileInput.onchange = e => {
+            const f = e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => {
                 imageObj = new Image();
                 imageObj.onload = initParticles;
                 imageObj.src = ev.target.result;
             };
             r.readAsDataURL(f);
         };
+
         function updateDisplays() {
             sizeValue.textContent = sizeRange.value;
             countValue.textContent = countRange.value;
@@ -163,6 +178,7 @@
             gradSpeedValue.textContent = parseFloat(gradSpeed.value).toFixed(1);
             trailAlphaValue.textContent = parseFloat(trailAlpha.value).toFixed(2);
         }
+
         class Particle {
             constructor(tx, ty, c) {
                 this.baseX = tx;
@@ -172,22 +188,22 @@
                 this.color = c;
                 this.size = parseFloat(particleSizeRange.value);
                 this.density = Math.random() * 20 + 5;
-                const chars = asciiChars.value.trim() || '.';
+                const chars = asciiChars.value.trim() || ".";
                 this.char = chars.charAt(Math.floor(Math.random() * chars.length));
             }
             draw() {
                 ctx.fillStyle = this.color;
                 if (asciiToggle.checked) {
                     ctx.font = `${this.size * 5}px monospace`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
                     ctx.fillText(this.char, this.x, this.y);
                 } else {
                     ctx.beginPath();
                     const s = this.size / 2;
-                    if (shapeSelect.value === 'square') {
+                    if (shapeSelect.value === "square") {
                         ctx.fillRect(this.x - s, this.y - s, this.size, this.size);
-                    } else if (shapeSelect.value === 'triangle') {
+                    } else if (shapeSelect.value === "triangle") {
                         ctx.moveTo(this.x, this.y - this.size);
                         ctx.lineTo(this.x + this.size, this.y + this.size);
                         ctx.lineTo(this.x - this.size, this.y + this.size);
@@ -215,15 +231,16 @@
                 }
             }
         }
+
         function createTextMap() {
-            const off = document.createElement('canvas');
+            const off = document.createElement("canvas");
             off.width = W; off.height = H;
-            const oc = off.getContext('2d');
+            const oc = off.getContext("2d");
             oc.clearRect(0, 0, W, H);
             oc.fillStyle = textColor.value;
             oc.font = `${sizeRange.value}px ${fontSelect.value}`;
-            oc.textAlign = 'center';
-            oc.textBaseline = 'middle';
+            oc.textAlign = "center";
+            oc.textBaseline = "middle";
             if (imageObj) {
                 const ar = imageObj.naturalWidth / imageObj.naturalHeight;
                 let dw = W * 0.85;
@@ -236,7 +253,7 @@
             const data = oc.getImageData(0, 0, W, H).data;
             textCoords = [];
             const cnt = parseInt(countRange.value, 10);
-            const step = placementModeSelect.value === 'free'
+            const step = placementModeSelect.value === "free"
                 ? Math.max(2, Math.floor(6000 / cnt))
                 : Math.max(2, Math.floor(3 * Math.pow(cnt / 800, 0.7)));
             for (let y = 0; y < H; y += step) {
@@ -251,6 +268,7 @@
                 textCoords.push({ x: W / 2, y: H / 2, color: textColor.value });
             }
         }
+
         function initParticles() {
             updateDisplays();
             createTextMap();
@@ -261,10 +279,11 @@
                 particles.push(new Particle(s.x, s.y, multiColor.checked ? s.color : textColor.value));
             }
         }
+
         function drawBackground() {
             gradTime += parseFloat(gradSpeed.value) * 0.01;
             let grad;
-            if (gradType.value === 'radial') {
+            if (gradType.value === "radial") {
                 grad = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, Math.hypot(W, H)/2);
             } else {
                 const a = gradTime;
@@ -275,12 +294,13 @@
             grad.addColorStop(0, gradColor1.value);
             grad.addColorStop(1, gradColor2.value);
             ctx.globalAlpha = 1 - parseFloat(trailAlpha.value);
-            ctx.fillStyle = '#000';
+            ctx.fillStyle = "#000";
             ctx.fillRect(0, 0, W, H);
             ctx.globalAlpha = 1;
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, H);
         }
+
         function animate(t) {
             const dt = t - lastTime;
             lastTime = t;
@@ -291,15 +311,29 @@
             }
             requestAnimationFrame(animate);
         }
+
         sizeRange.value = 120;
         countRange.value = 2500;
-        placementModeSelect.value = 'free';
-        [textInput, textColor, fontSelect, sizeRange, countRange, shapeSelect, particleSizeRange,
-         mouseRadius, multiColor, placementModeSelect, gradType, gradColor1, gradColor2,
-         gradSpeed, trailAlpha, asciiToggle, asciiChars].forEach(el => el.addEventListener('input', initParticles));
-        pauseBtn.onclick = () => { paused = !paused; pauseBtn.textContent = paused ? 'Reprendre' : 'Pause'; };
+        placementModeSelect.value = "free";
+        [
+          textInput, textColor, fontSelect, sizeRange, countRange, shapeSelect,
+          particleSizeRange, mouseRadius, multiColor, placementModeSelect,
+          gradType, gradColor1, gradColor2, gradSpeed, trailAlpha,
+          asciiToggle, asciiChars
+        ].forEach(el => el.addEventListener("input", initParticles));
+
+        pauseBtn.onclick = () => {
+            paused = !paused;
+            pauseBtn.textContent = paused ? "Reprendre" : "Pause";
+        };
         resetBtn.onclick = () => location.reload();
-        exportBtn.onclick = () => { const a = document.createElement('a'); a.download = 'particles.png'; a.href = canvas.toDataURL(); a.click(); };
+        exportBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.download = "particles.png";
+            a.href = canvas.toDataURL();
+            a.click();
+        };
+
         resize();
         initParticles();
         requestAnimationFrame(animate);
