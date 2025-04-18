@@ -28,7 +28,6 @@
         #controls summary { font-weight: bold; cursor: pointer; list-style: none; position: relative; padding-left: 1.6em; margin-bottom: 10px; color: #eee; font-size: 1rem; user-select: none; }
         #controls summary::before { content: '▶'; position: absolute; left: 0; top: 1px; display: inline-block; transition: transform 0.2s ease-in-out; font-size: 0.8em; color: #bbb; }
         #controls details[open] > summary::before { transform: rotate(90deg); }
-        .value-display { font-weight: normal; font-size: 0.85rem; color: #bbb; margin-left: 8px; }
         label.checkbox-label { display: flex; align-items: center; margin-top: 12px; cursor: pointer; }
         label.checkbox-label input[type="checkbox"] { width: auto; margin-right: 10px; margin-bottom: 0; flex-shrink: 0; accent-color: #ff7e21; }
         #controls fieldset { margin: 0; border: 1px solid #666; padding: 12px; border-radius: 8px; background-color: rgba(0,0,0,0.15); box-shadow: inset 0 1px 4px rgba(0,0,0,0.25); }
@@ -42,11 +41,6 @@
             #controls button { padding: 14px 18px; font-size: 1.05rem; }
             #fpsCounter { font-size: 1rem; }
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #controls input[type="range"]::-webkit-slider-thumb { background: #f80; border: none; border-radius: 50%; cursor: pointer; height: 18px; width: 18px; margin-top: -6px; appearance: none; -webkit-appearance: none; }
-        #controls input[type="range"] { accent-color: #f80; cursor: pointer; height: 6px; }
-        #controls select { background-color: #444; color: #fff; border: 1px solid #666; border-radius: 5px; padding: 9px; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -82,23 +76,26 @@
             <label class="checkbox-label"><input id="multiColor" type="checkbox" checked /> Couleurs multiples (image)</label>
             <label>Placement :</label>
             <select id="placementModeSelect">
-                <option value="grid">Grille</option>
+                <option value="grid">Grid</option>
                 <option value="free" selected>Libre</option>
             </select>
         </details>
         <details open><summary>Fond</summary>
             <label>Type dégradé :</label>
             <select id="gradType"><option value="linear" selected>Linéaire</option><option value="radial">Radial</option></select>
-            <label>Couleur 1 :</label><input id="gradColor1" type="color" value="#0a0a23" />
-            <label>Couleur 2 :</label><input id="gradColor2" type="color" value="#000000" />
-            <label>Vitesse :<span class="value-display" id="gradSpeedValue">0.4</span></label>
+            <label>Couleur 1 :</label>
+            <input id="gradColor1" type="color" value="#ff0000" />
+            <label>Couleur 2 :</label>
+            <input id="gradColor2" type="color" value="#000000" />
+            <label>Vitesse :<span class="valuedisplay" id="gradSpeedValue">0.4</span></label>
             <input id="gradSpeed" type="range" min="0" max="5" step="0.1" value="0.4" />
-            <label>Traînée (alpha) :<span class="value-display" id="trailAlphaValue">0.30</span></label>
+            <label>Traînée (alpha) :<span class="valuedisplay" id="trailAlphaValue">0.30</span></label>
             <input id="trailAlpha" type="range" min="0" max="1" step="0.01" value="0.30" />
         </details>
         <details><summary>Mode ASCII</summary>
-            <label class="checkbox-label"><input id="asciiToggle" type="checkbox" /> Activer</label>
-            <label>Caractères :</label><input id="asciiChars" type="text" value=".:*+=#%@" placeholder="Ex: .:-=+*#%@" />
+            <label class="checkboxlabel"><input id="asciiToggle" type="checkbox" /> Activer</label>
+            <label>Caractères :</label>
+            <input id="asciiChars" type="text" value=".:*+=#%@" placeholder="Ex: .:-=+*#%@" />
         </details>
         <fieldset style="margin-top: auto; border-top:1px solid #666; padding-top:15px;">
             <legend>Actions</legend>
@@ -108,12 +105,40 @@
         </fieldset>
     </div>
     <script>
-        const canvas = document.getElementById("canvas"); const ctx = canvas.getContext("2d"); const fpsCounter = document.getElementById("fpsCounter"); const controlsPanel = document.getElementById('controls'); const toggleControlsBtn = document.getElementById('toggleControlsBtn');
-        const fileInput = document.getElementById("fileInput"); const textInput = document.getElementById("textInput"); const textColor = document.getElementById("textColor"); const fontSelect = document.getElementById("fontSelect"); const sizeRange = document.getElementById("sizeRange"); const countRange = document.getElementById("countRange"); const shapeSelect = document.getElementById("shapeSelect"); const particleSizeRange = document.getElementById("particleSizeRange"); const mouseRadius = document.getElementById("mouseRadius"); const multiColor = document.getElementById("multiColor"); const placementModeSelect = document.getElementById("placementModeSelect"); const gradType = document.getElementById("gradType"); const gradColor1 = document.getElementById("gradColor1"); const gradColor2 = document.getElementById("gradColor2"); const gradSpeed = document.getElementById("gradSpeed"); const trailAlpha = document.getElementById("trailAlpha"); const asciiToggle = document.getElementById("asciiToggle"); const asciiChars = document.getElementById("asciiChars"); const pauseBtn = document.getElementById("pauseBtn"); const resetBtn = document.getElementById("resetBtn"); const exportBtn = document.getElementById("exportBtn");
-        const sizeValue = document.getElementById("sizeValue"); const countValue = document.getElementById("countValue"); const particleSizeValue = document.getElementById("particleSizeValue"); const mouseRadiusValue = document.getElementById("mouseRadiusValue"); const gradSpeedValue = document.getElementById("gradSpeedValue"); const trailAlphaValue = document.getElementById("trailAlphaValue");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const fpsCounter = document.getElementById("fpsCounter");
+        const controlsPanel = document.getElementById('controls');
+        const toggleControlsBtn = document.getElementById('toggleControlsBtn');
+        const fileInput = document.getElementById("fileInput");
+        const textInput = document.getElementById("textInput");
+        const textColor = document.getElementById("textColor");
+        const fontSelect = document.getElementById("fontSelect");
+        const sizeRange = document.getElementById("sizeRange");
+        const countRange = document.getElementById("countRange");
+        const shapeSelect = document.getElementById("shapeSelect");
+        const particleSizeRange = document.getElementById("particleSizeRange");
+        const mouseRadius = document.getElementById("mouseRadius");
+        const multiColor = document.getElementById("multiColor");
+        const placementModeSelect = document.getElementById("placementModeSelect");
+        const gradType = document.getElementById("gradType");
+        const gradColor1 = document.getElementById("gradColor1");
+        const gradColor2 = document.getElementById("gradColor2");
+        const gradSpeed = document.getElementById("gradSpeed");
+        const trailAlpha = document.getElementById("trailAlpha");
+        const asciiToggle = document.getElementById("asciiToggle");
+        const asciiChars = document.getElementById("asciiChars");
+        const pauseBtn = document.getElementById("pauseBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const exportBtn = document.getElementById("exportBtn");
+        const sizeValue = document.getElementById("sizeValue");
+        const countValue = document.getElementById("countValue");
+        const particleSizeValue = document.getElementById("particleSizeValue");
+        const mouseRadiusValue = document.getElementById("mouseRadiusValue");
+        const gradSpeedValue = document.getElementById("gradSpeedValue");
+        const trailAlphaValue = document.getElementById("trailAlphaValue");
         let W, H, particles = [], textCoords = [], imageObj = null, paused = false, lastTime = performance.now(), gradTime = 0;
         let mouse = {x: null, y: null};
-        
         function resize() {
             W = canvas.width = window.innerWidth;
             H = canvas.height = window.innerHeight;
@@ -122,8 +147,14 @@
         window.addEventListener('resize', resize);
         canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
         canvas.addEventListener('mouseout', () => { mouse.x = null; mouse.y = null; });
-        toggleControlsBtn.addEventListener('click', () => controlsPanel.classList.toggle('controls-visible'));
-        fileInput.onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => { imageObj = new Image(); imageObj.onload = initParticles; imageObj.src = ev.target.result; }; r.readAsDataURL(f); };
+        toggleControlsBtn.addEventListener('click', () => controlsPanel.classList.toggle('controlsvisible'));
+        fileInput.onchange = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => {
+                imageObj = new Image();
+                imageObj.onload = initParticles;
+                imageObj.src = ev.target.result;
+            };
+            r.readAsDataURL(f);
+        };
         function updateDisplays() {
             sizeValue.textContent = sizeRange.value;
             countValue.textContent = countRange.value;
@@ -132,7 +163,6 @@
             gradSpeedValue.textContent = parseFloat(gradSpeed.value).toFixed(1);
             trailAlphaValue.textContent = parseFloat(trailAlpha.value).toFixed(2);
         }
-        
         class Particle {
             constructor(tx, ty, c) {
                 this.baseX = tx;
@@ -142,12 +172,9 @@
                 this.color = c;
                 this.size = parseFloat(particleSizeRange.value);
                 this.density = Math.random() * 20 + 5;
-
-                // Assignation du caractère ASCII aléatoire
                 const chars = asciiChars.value.trim() || '.';
                 this.char = chars.charAt(Math.floor(Math.random() * chars.length));
             }
-
             draw() {
                 ctx.fillStyle = this.color;
                 if (asciiToggle.checked) {
@@ -172,7 +199,6 @@
                     }
                 }
             }
-
             update() {
                 const dx = mouse.x - this.x;
                 const dy = mouse.y - this.y;
@@ -189,17 +215,15 @@
                 }
             }
         }
-
         function createTextMap() {
             const off = document.createElement('canvas');
             off.width = W; off.height = H;
             const oc = off.getContext('2d');
             oc.clearRect(0, 0, W, H);
             oc.fillStyle = textColor.value;
-            oc.font = `${sizeRange.value}px ${fontSelect. value}`;
+            oc.font = `${sizeRange.value}px ${fontSelect.value}`;
             oc.textAlign = 'center';
             oc.textBaseline = 'middle';
-
             if (imageObj) {
                 const ar = imageObj.naturalWidth / imageObj.naturalHeight;
                 let dw = W * 0.85;
@@ -209,55 +233,34 @@
             } else {
                 oc.fillText(textInput.value, W / 2, H / 2);
             }
-
             const data = oc.getImageData(0, 0, W, H).data;
             textCoords = [];
-            const cnt = parseInt(countRange.value);
-            
-            if (placementModeSelect.value === 'free') {
-                const step = Math.max(2, Math.floor(6000 / cnt));
-                for (let y = 0; y < H; y += step) {
-                    for (let x = 0; x < W; x += step) {
-                        const i = (y * W + x) * 4;
-                        if (data[i + 3] > 100) {
-                            textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
-                        }
-                    }
-                }
-                for (let y = 0; y < H; y += 6) {
-                    for (let x = 0; x < W; x += 6) {
-                        const i = (y * W + x) * 4;
-                        if (data[i + 3] > 100) {
-                            textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
-                        }
-                    }
-                }
-            } else {
-                const step = Math.max(2, Math.floor(3 * Math.pow(cnt / 800, 0.7)));
-                for (let y = 0; y < H; y += step) {
-                    for (let x = 0; x < W; x += step) {
-                        const i = (y * W + x) * 4;
-                        if (data[i + 3] > 100) {
-                            textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
-                        }
+            const cnt = parseInt(countRange.value, 10);
+            const step = placementModeSelect.value === 'free'
+                ? Math.max(2, Math.floor(6000 / cnt))
+                : Math.max(2, Math.floor(3 * Math.pow(cnt / 800, 0.7)));
+            for (let y = 0; y < H; y += step) {
+                for (let x = 0; x < W; x += step) {
+                    const i = (y * W + x) * 4;
+                    if (data[i + 3] > 100) {
+                        textCoords.push({ x, y, color: `rgb(${data[i]},${data[i+1]},${data[i+2]})` });
                     }
                 }
             }
-
-            if (!textCoords.length) textCoords.push({ x: W/2, y: H/2, color: textColor.value });
+            if (!textCoords.length) {
+                textCoords.push({ x: W / 2, y: H / 2, color: textColor.value });
+            }
         }
-
         function initParticles() {
             updateDisplays();
             createTextMap();
             particles = [];
-            const cnt = parseInt(countRange.value);
+            const cnt = parseInt(countRange.value, 10);
             for (let i = 0; i < cnt; i++) {
                 const s = textCoords[Math.floor(Math.random() * textCoords.length)];
                 particles.push(new Particle(s.x, s.y, multiColor.checked ? s.color : textColor.value));
             }
         }
-
         function drawBackground() {
             gradTime += parseFloat(gradSpeed.value) * 0.01;
             let grad;
@@ -278,7 +281,6 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, H);
         }
-
         function animate(t) {
             const dt = t - lastTime;
             lastTime = t;
@@ -289,8 +291,8 @@
             }
             requestAnimationFrame(animate);
         }
-
-        // Initialisation
+        sizeRange.value = 120;
+        countRange.value = 2500;
         placementModeSelect.value = 'free';
         [textInput, textColor, fontSelect, sizeRange, countRange, shapeSelect, particleSizeRange,
          mouseRadius, multiColor, placementModeSelect, gradType, gradColor1, gradColor2,
